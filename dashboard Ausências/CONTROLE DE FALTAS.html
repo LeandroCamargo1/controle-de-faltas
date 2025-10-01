@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Ausências</title>
+    <!-- Incluindo a biblioteca Chart.js para os gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #003366; /* Azul Escuro Hokkaido */
+            --secondary-color: #0055a4; /* Azul Médio Hokkaido */
+            --accent-color: #f39c12; /* Amarelo/Laranja para destaque */
+            --background-color: #f4f7f6;
+            --text-color: #333;
+            --header-text-color: #ffffff;
+            --border-color: #ddd;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --danger-color: #e74c3c;
+            --danger-hover-color: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--header-text-color);
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+            margin: -25px -25px 25px -25px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.2em;
+        }
+        
+        header p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 992px) {
+            .main-grid {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        .form-section, .data-section {
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        h3.sub-section-title {
+            margin-top: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        
+        #employeeManagementForm {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #employeeManagementForm input {
+            flex-grow: 1;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .management-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .management-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .management-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .delete-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 3px 6px; /* Largura reduzida */
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: background-color 0.3s;
+        }
+        
+        .delete-btn:hover {
+            background-color: var(--danger-hover-color);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .chart-box {
+             padding: 20px;
+             border-radius: 8px;
+             box-shadow: 0 2px 5px var(--shadow-color);
+             border: 1px solid var(--border-color);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        
+        .table-header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .table-header-controls h3 {
+            margin: 0;
+        }
+
+        .table-header-controls .form-group {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            padding: 8px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        thead tr {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        tfoot tr {
+            font-weight: bold;
+            background-color: #e9ecef;
+        }
+        
+        .delete-record-btn {
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 1.4em;
+            padding: 0 5px;
+            line-height: 1;
+            font-weight: bold;
+            transition: color 0.2s, transform 0.2s;
+        }
+        
+        .delete-record-btn:hover {
+            color: var(--danger-color);
+            transform: scale(1.2);
+        }
+        
+        #registroTable td:last-child {
+            text-align: center;
+            width: 40px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Dashboard de Ausências</h1>
+            <p>Gestão de Equipe e Análise Visual de Absenteísmo</p>
+        </header>
+
+        <div class="main-grid">
+            <div class="form-section">
+                <h2>Adicionar Novo Registro</h2>
+                <form id="absenceForm">
+                    <div class="form-group">
+                        <label for="data">Data</label>
+                        <input type="date" id="data" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="operador">Operador(a)</label>
+                        <select id="operador" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo">Tipo de Ausência</label>
+                        <select id="tipo" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="observacao">Observação (Opcional)</label>
+                        <textarea id="observacao"></textarea>
+                    </div>
+                    <button type="submit">Adicionar Registro</button>
+                </form>
+                
+                <h3 class="sub-section-title">Gerenciar Funcionários</h3>
+                <form id="employeeManagementForm">
+                    <input type="text" id="newEmployeeName" placeholder="Nome do funcionário" required>
+                    <button type="submit" style="width: auto; font-size: 0.9em;">Adicionar</button>
+                </form>
+                <ul id="employeeList" class="management-list"></ul>
+            </div>
+
+            <div class="data-section">
+                <h2>Análise Visual</h2>
+                <div class="charts-container">
+                    <div class="chart-box">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+                
+                <h2>Relatórios Detalhados</h2>
+                <h3>Resumo por Funcionário</h3>
+                <div class="table-container">
+                    <table id="resumoFuncionariosTable">
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Faltas</th>
+                                <th>Atestados</th>
+                                <th>Aniversário</th>
+                                <th>Hokkaido Day</th>
+                                <th>Brigada</th>
+                                <th>Troca</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot></tfoot>
+                    </table>
+                </div>
+
+                <h3 style="margin-top: 30px;">Resumo Anual</h3>
+                <div class="table-container">
+                    <table id="resumoAnualTable">
+                        <thead>
+                            <tr>
+                                <th>Mês</th>
+                                <th>Faltas</th>
+                                <th>Atestado</th>
+                                <th>Aniversário</th>
+                                <th>Hokkaido Day</th>
+                                <th>Brigada</th>
+                                <th>Troca</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot></tfoot>
+                    </table>
+                </div>
+
+                <div class="table-header-controls">
+                    <h3>Histórico de Registros</h3>
+                    <div class="form-group">
+                        <label for="monthFilter">Filtrar por Mês:</label>
+                        <select id="monthFilter"></select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="registroTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Mês</th>
+                                <th>Operador(a)</th>
+                                <th>Tipo</th>
+                                <th>Observação</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DADOS INICIAIS ---
+            let funcionarios = [];
+            
+            const tiposDeAusencia = [
+                "FALTA", "ATESTADO", "ANIVERSÁRIO", "HOKKAIDO DAY", "BRIGADA", "TROCA"
+            ];
+            
+            const tipoColunaMap = { "FALTA": "Faltas", "ATESTADO": "Atestados", "ANIVERSÁRIO": "Aniversario", "HOKKAIDO DAY": "HokkaidoDay", "BRIGADA": "Brigada", "TROCA": "Troca" };
+            const tipoColunaMapAnual = { "FALTA": "Faltas", "ATESTADO": "Atestado", "ANIVERSÁRIO": "Aniversario", "HOKKAIDO DAY": "HokkaidoDay", "BRIGADA": "Brigada", "TROCA": "Troca" };
+            const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+            // --- BANCO DE DADOS EM MEMÓRIA E LOCALSTORAGE ---
+            let registros = [];
+            const STORAGE_KEY_REGISTROS = 'hokkaidoAbsenceData_2T';
+            const STORAGE_KEY_FUNCIONARIOS = 'hokkaidoEmployeeData_2T';
+
+            // --- ELEMENTOS DO DOM ---
+            const absenceForm = document.getElementById('absenceForm');
+            const employeeForm = document.getElementById('employeeManagementForm');
+            const newEmployeeInput = document.getElementById('newEmployeeName');
+            const employeeListUl = document.getElementById('employeeList');
+            const operadorSelect = document.getElementById('operador');
+            const tipoSelect = document.getElementById('tipo');
+            const monthFilterSelect = document.getElementById('monthFilter');
+            const registroTableBody = document.querySelector('#registroTable tbody');
+            const resumoFuncionariosTableBody = document.querySelector('#resumoFuncionariosTable tbody');
+            const resumoFuncionariosTableFoot = document.querySelector('#resumoFuncionariosTable tfoot');
+            const resumoAnualTableBody = document.querySelector('#resumoAnualTable tbody');
+            const resumoAnualTableFoot = document.querySelector('#resumoAnualTable tfoot');
+
+            let monthlyChart, typeChart;
+
+            // --- FUNÇÕES DE DADOS ---
+            function saveData() {
+                localStorage.setItem(STORAGE_KEY_REGISTROS, JSON.stringify(registros));
+                localStorage.setItem(STORAGE_KEY_FUNCIONARIOS, JSON.stringify(funcionarios));
+            }
+
+            function loadData() {
+                const storedRegistros = localStorage.getItem(STORAGE_KEY_REGISTROS);
+                if (storedRegistros) {
+                    // Garante que registros antigos (sem ID) recebam um para a função de deletar funcionar
+                    registros = JSON.parse(storedRegistros).map((reg, index) => ({
+                        ...reg,
+                        id: reg.id || Date.now() + index 
+                    }));
+                }
+
+                const storedFuncionarios = localStorage.getItem(STORAGE_KEY_FUNCIONARIOS);
+                if (storedFuncionarios && JSON.parse(storedFuncionarios).length > 0) {
+                    funcionarios = JSON.parse(storedFuncionarios);
+                } else {
+                    // Lista inicial se não houver nada salvo
+                    funcionarios = ["LUCIANO VIEIRA", "JOSE OTAVIO", "MARIA BARBOSA", "REGINA PERES", "KARINA FERREIRA", "ISALEM EVANDRO", "UARLEI DE JESUS", "MICHELE DAYSE", "RONALDO DOS SANTOS", "ADEMIR DE ALMEIDA", "DANIEL LISBOA", "MARILISE KATIA", "CLEIDIANA", "MATHEUS ALGUSTO", "THIAGO ALBERIGI", "RENATA ROCHA", "SILVIA APARECIDA"];
+                }
+            }
+
+            // --- FUNÇÕES DE RENDERIZAÇÃO ---
+            function renderEmployeeList() {
+                employeeListUl.innerHTML = '';
+                funcionarios.sort().forEach(nome => {
+                    const li = document.createElement('li');
+                    li.textContent = nome;
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Excluir';
+                    deleteButton.className = 'delete-btn';
+                    deleteButton.dataset.nome = nome;
+                    li.appendChild(deleteButton);
+                    employeeListUl.appendChild(li);
+                });
+            }
+
+            function popularDropdowns() {
+                operadorSelect.innerHTML = '<option value="">Selecione...</option>';
+                funcionarios.sort().forEach(nome => {
+                    operadorSelect.appendChild(new Option(nome, nome));
+                });
+                
+                if (tipoSelect.options.length <= 1) {
+                    tiposDeAusencia.forEach(tipo => {
+                        tipoSelect.appendChild(new Option(tipo, tipo));
+                    });
+                }
+            }
+
+            function popularFiltroMes() {
+                monthFilterSelect.innerHTML = '<option value="todos">Todos os Meses</option>';
+                meses.forEach(mes => {
+                    monthFilterSelect.appendChild(new Option(mes, mes));
+                });
+            }
+            
+            function renderizarTudo() {
+                renderEmployeeList();
+                popularDropdowns();
+                renderizarResumos();
+                renderizarTabelaRegistros();
+                updateCharts();
+                saveData();
+            }
+
+            function renderizarTabelaRegistros() {
+                const selectedMonth = monthFilterSelect.value;
+                registroTableBody.innerHTML = '';
+
+                const filteredRecords = (selectedMonth === 'todos')
+                    ? [...registros]
+                    : registros.filter(reg => reg.mes === selectedMonth);
+
+                const registrosOrdenados = filteredRecords.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+                if (registrosOrdenados.length === 0) {
+                     registroTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum registro para o período selecionado.</td></tr>';
+                     return;
+                }
+                registrosOrdenados.forEach(reg => {
+                    const row = registroTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${new Date(reg.data + 'T00:00:00-03:00').toLocaleDateString('pt-BR')}</td>
+                        <td>${reg.mes}</td>
+                        <td>${reg.operador}</td>
+                        <td>${reg.tipo}</td>
+                        <td>${reg.observacao}</td>
+                        <td><button class="delete-record-btn" data-id="${reg.id}" title="Excluir registro">&times;</button></td>
+                    `;
+                });
+            }
+            
+            function renderizarResumos() {
+                const allFuncionariosWithRecords = [...new Set([...funcionarios, ...registros.map(r => r.operador)])].sort();
+                
+                const resumoFuncionarios = {};
+                allFuncionariosWithRecords.forEach(nome => {
+                    resumoFuncionarios[nome] = { Faltas: 0, Atestados: 0, Aniversario: 0, HokkaidoDay: 0, Brigada: 0, Troca: 0, Total: 0 };
+                });
+                
+                const resumoAnual = {};
+                meses.forEach(mes => {
+                    resumoAnual[mes] = { Faltas: 0, Atestado: 0, Aniversario: 0, HokkaidoDay: 0, Brigada: 0, Troca: 0, Total: 0 };
+                });
+
+                registros.forEach(reg => {
+                    if (resumoFuncionarios[reg.operador] && tipoColunaMap[reg.tipo]) {
+                        resumoFuncionarios[reg.operador][tipoColunaMap[reg.tipo]]++;
+                        resumoFuncionarios[reg.operador].Total++;
+                    }
+                    if (resumoAnual[reg.mes] && tipoColunaMapAnual[reg.tipo]) {
+                        resumoAnual[reg.mes][tipoColunaMapAnual[reg.tipo]]++;
+                        resumoAnual[reg.mes].Total++;
+                    }
+                });
+                
+                resumoFuncionariosTableBody.innerHTML = '';
+                let totaisFuncionarios = { Faltas: 0, Atestados: 0, Aniversario: 0, HokkaidoDay: 0, Brigada: 0, Troca: 0, Total: 0 };
+                allFuncionariosWithRecords.forEach(nome => {
+                    const dados = resumoFuncionarios[nome];
+                    const row = resumoFuncionariosTableBody.insertRow();
+                    row.innerHTML = `<td>${nome}</td><td>${dados.Faltas}</td><td>${dados.Atestados}</td><td>${dados.Aniversario}</td><td>${dados.HokkaidoDay}</td><td>${dados.Brigada}</td><td>${dados.Troca}</td><td><strong>${dados.Total}</strong></td>`;
+                    Object.keys(totaisFuncionarios).forEach(key => totaisFuncionarios[key] += dados[key]);
+                });
+                resumoFuncionariosTableFoot.innerHTML = `<tr><td>TOTAL</td><td>${totaisFuncionarios.Faltas}</td><td>${totaisFuncionarios.Atestados}</td><td>${totaisFuncionarios.Aniversario}</td><td>${totaisFuncionarios.HokkaidoDay}</td><td>${totaisFuncionarios.Brigada}</td><td>${totaisFuncionarios.Troca}</td><td>${totaisFuncionarios.Total}</td></tr>`;
+
+                resumoAnualTableBody.innerHTML = '';
+                let totaisAnual = { Faltas: 0, Atestado: 0, Aniversario: 0, HokkaidoDay: 0, Brigada: 0, Troca: 0, Total: 0 };
+                meses.forEach(mes => {
+                    const dados = resumoAnual[mes];
+                    const row = resumoAnualTableBody.insertRow();
+                    row.innerHTML = `<td>${mes}</td><td>${dados.Faltas}</td><td>${dados.Atestado}</td><td>${dados.Aniversario}</td><td>${dados.HokkaidoDay}</td><td>${dados.Brigada}</td><td>${dados.Troca}</td><td><strong>${dados.Total}</strong></td>`;
+                    Object.keys(totaisAnual).forEach(key => totaisAnual[key] += dados[key]);
+                });
+                resumoAnualTableFoot.innerHTML = `<tr><td>TOTAL</td><td>${totaisAnual.Faltas}</td><td>${totaisAnual.Atestado}</td><td>${totaisAnual.Aniversario}</td><td>${totaisAnual.HokkaidoDay}</td><td>${totaisAnual.Brigada}</td><td>${totaisAnual.Troca}</td><td>${totaisAnual.Total}</td></tr>`;
+            }
+
+            // --- FUNÇÕES DE GRÁFICOS ---
+            function initCharts() {
+                monthlyChart = new Chart(document.getElementById('monthlyChart').getContext('2d'), { type: 'bar', data: { labels: meses, datasets: [{ label: 'Total de Ausências por Mês', data: [], backgroundColor: 'rgba(0, 85, 164, 0.7)', borderColor: 'rgba(0, 51, 102, 1)', borderWidth: 1 }] }, options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Ausências por Mês' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+                typeChart = new Chart(document.getElementById('typeChart').getContext('2d'), { type: 'pie', data: { labels: tiposDeAusencia, datasets: [{ label: 'Tipos de Ausência', data: [], backgroundColor: ['#e74c3c', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#2ecc71'] }] }, options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Ausências por Tipo' } } } });
+            }
+
+            function updateCharts() {
+                monthlyChart.data.datasets[0].data = meses.map(mes => registros.filter(reg => reg.mes === mes).length);
+                typeChart.data.datasets[0].data = tiposDeAusencia.map(tipo => registros.filter(reg => reg.tipo === tipo).length);
+                monthlyChart.update();
+                typeChart.update();
+            }
+
+            // --- HANDLERS DE EVENTOS ---
+            absenceForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const dataInput = document.getElementById('data').value;
+                registros.push({
+                    id: Date.now(), // Adiciona um ID único para cada registro
+                    data: dataInput,
+                    mes: meses[new Date(dataInput + 'T00:00:00-03:00').getMonth()],
+                    operador: operadorSelect.value,
+                    tipo: tipoSelect.value,
+                    observacao: document.getElementById('observacao').value
+                });
+                renderizarTudo();
+                absenceForm.reset();
+            });
+
+            employeeForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const nome = newEmployeeInput.value.trim().toUpperCase();
+                if (nome && !funcionarios.includes(nome)) {
+                    funcionarios.push(nome);
+                    renderizarTudo();
+                } else if (funcionarios.includes(nome)) {
+                    alert('Funcionário já cadastrado.');
+                }
+                newEmployeeInput.value = '';
+            });
+
+            employeeListUl.addEventListener('click', (event) => {
+                if (event.target.classList.contains('delete-btn')) {
+                    const nomeParaExcluir = event.target.dataset.nome;
+                    if (confirm(`Tem certeza que deseja excluir "${nomeParaExcluir}" da lista? Os registros de ausência existentes para esta pessoa serão mantidos.`)) {
+                        funcionarios = funcionarios.filter(f => f !== nomeParaExcluir);
+                        renderizarTudo();
+                    }
+                }
+            });
+            
+            registroTableBody.addEventListener('click', (event) => {
+                if (event.target.classList.contains('delete-record-btn')) {
+                    const recordIdToDelete = Number(event.target.dataset.id);
+                    if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
+                        registros = registros.filter(r => r.id !== recordIdToDelete);
+                        renderizarTudo();
+                    }
+                }
+            });
+            
+            monthFilterSelect.addEventListener('change', renderizarTabelaRegistros);
+
+            // --- INICIALIZAÇÃO ---
+            loadData();
+            popularDropdowns();
+            popularFiltroMes();
+            initCharts();
+            renderizarTudo();
+        });
+    </script>
+</body>
+</html>
+
